@@ -7,18 +7,20 @@
 <title>QR thu hộ Trường học</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <style>
 
 body{
-font-family: Arial;
+font-family:Arial;
 margin:0;
-background:#f2f2f2;
+background:#f3f3f3;
 }
 
 .header{
 
-background: linear-gradient(90deg,#0c7c6a,#0f9a8a);
+background:linear-gradient(90deg,#0c7c6a,#0f9a8a);
 color:white;
 padding:40px;
 text-align:center;
@@ -36,9 +38,12 @@ margin-top:10px;
 }
 
 .contact{
+
 margin-top:10px;
-font-size:16px;
-opacity:0.9;
+font-size:17px;
+color:yellow;
+font-weight:bold;
+
 }
 
 .container{
@@ -63,6 +68,19 @@ font-size:16px;
 width:350px;
 border-radius:8px;
 border:1px solid #ccc;
+
+}
+
+.downloadAll{
+
+margin-left:20px;
+padding:10px 15px;
+font-size:16px;
+background:#0c7c6a;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
 
 }
 
@@ -96,7 +114,7 @@ width:200px;
 <p>Tải file Excel để tạo QR thanh toán, tìm kiếm thông tin học sinh để thanh toán các khoản phí</p>
 
 <div class="contact">
-Liên hệ: Lê Mạnh Hùng - PGD Đông Hà - ĐT: 0914.179.989
+Lê Mạnh Hùng - PGD Đông Hà - ĐT: 0914.179.989
 </div>
 
 </div>
@@ -106,6 +124,8 @@ Liên hệ: Lê Mạnh Hùng - PGD Đông Hà - ĐT: 0914.179.989
 <input type="file" id="fileInput">
 
 <input class="search" type="text" id="search" placeholder="🔍 Tìm theo AccountName / AccountNumber / StudentID">
+
+<button class="downloadAll" onclick="downloadAll()">Tải toàn bộ QR (ZIP)</button>
 
 <div id="qrContainer"></div>
 
@@ -134,14 +154,21 @@ reader.readAsBinaryString(file);
 
 });
 
+function createQR(row){
+
+return `https://img.vietqr.io/image/BIDV-${row.AccountNumber}-compact2.png?amount=${row.Amount}&addInfo=${encodeURIComponent(row.Remark)}&accountName=${encodeURIComponent(row.AccountName)}`;
+
+}
+
 function render(rows){
 
 let container=document.getElementById("qrContainer");
+
 container.innerHTML="";
 
 rows.forEach(row=>{
 
-let qr=`https://img.vietqr.io/image/BIDV-${row.AccountNumber}-compact2.png?amount=${row.Amount}&addInfo=${encodeURIComponent(row.Remark)}&accountName=${encodeURIComponent(row.AccountName)}`;
+let qr=createQR(row);
 
 let div=document.createElement("div");
 
@@ -150,6 +177,7 @@ div.className="qr";
 div.innerHTML=`
 
 <b>${row.AccountName}</b><br>
+
 ${row.Class} - ${row.StudentID}<br><br>
 
 <img src="${qr}"><br><br>
@@ -187,6 +215,32 @@ String(r.StudentID).toLowerCase().includes(keyword)
 render(filtered);
 
 });
+
+async function downloadAll(){
+
+const zip=new JSZip();
+
+for(let row of data){
+
+let url=createQR(row);
+
+let response=await fetch(url);
+
+let blob=await response.blob();
+
+let filename=`${row.Class}_${row.StudentID}.png`;
+
+zip.file(filename,blob);
+
+}
+
+zip.generateAsync({type:"blob"}).then(function(content){
+
+saveAs(content,"QR_HOC_SINH.zip");
+
+});
+
+}
 
 </script>
 
