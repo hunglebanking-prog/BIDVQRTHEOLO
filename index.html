@@ -116,9 +116,41 @@ Tải toàn bộ QR
 let students=[]
 let qrImages=[]
 
-document.getElementById("upload").addEventListener("change",handleFile)
+/* Tự động load file data.xlsx khi mở web */
 
-function handleFile(e){
+window.onload=function(){
+loadExcelFile("data.xlsx")
+}
+
+/* đọc file Excel */
+
+async function loadExcelFile(file){
+
+try{
+
+const response=await fetch(file)
+
+const data=await response.arrayBuffer()
+
+const workbook=XLSX.read(data,{type:"array"})
+
+const sheet=workbook.Sheets[workbook.SheetNames[0]]
+
+students=XLSX.utils.sheet_to_json(sheet)
+
+render()
+
+}catch(e){
+
+console.log("Chưa có file data.xlsx")
+
+}
+
+}
+
+/* upload file thủ công nếu cần */
+
+document.getElementById("upload").addEventListener("change",function(e){
 
 const reader=new FileReader()
 
@@ -138,7 +170,7 @@ render()
 
 reader.readAsArrayBuffer(e.target.files[0])
 
-}
+})
 
 function render(){
 
