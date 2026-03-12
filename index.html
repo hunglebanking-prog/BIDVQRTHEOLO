@@ -1,10 +1,12 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Tạo QR BIDV hàng loạt</title>
 
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+<meta charset="UTF-8">
+
+<title>Tạo QR BIDV theo lô</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
@@ -15,7 +17,7 @@ background:#f4f6f8;
 }
 
 h1{
-color:#0066b3;
+color:#0a5aa1;
 }
 
 .qr{
@@ -24,7 +26,8 @@ padding:15px;
 margin:10px;
 display:inline-block;
 border-radius:10px;
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
+box-shadow:0 2px 5px rgba(0,0,0,0.15);
+text-align:center;
 }
 
 img{
@@ -45,39 +48,56 @@ width:200px;
 
 <script>
 
-document.getElementById("fileInput").addEventListener("change",function(e){
+document.getElementById("fileInput").addEventListener("change", function(e){
 
-const file=e.target.files[0];
+const file = e.target.files[0];
 
-Papa.parse(file,{
-header:true,
-complete:function(results){
+const reader = new FileReader();
 
-let data=results.data;
+reader.onload = function(e){
 
-let container=document.getElementById("qrContainer");
+const data = new Uint8Array(e.target.result);
+
+const workbook = XLSX.read(data,{type:'array'});
+
+const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+const rows = XLSX.utils.sheet_to_json(sheet);
+
+let container = document.getElementById("qrContainer");
 
 container.innerHTML="";
 
-data.forEach(row=>{
+rows.forEach(row=>{
 
-if(!row.stk) return;
+let account = row.AccountNumber;
+let amount = row.Amount;
+let name = row.AccountName;
+let remark = row.Remark;
+let className = row.Class;
+let studentID = row.StudentID;
 
-let url=`https://img.vietqr.io/image/BIDV-${row.stk}-compact2.png?amount=${row.sotien}&addInfo=${encodeURIComponent(row.noidung)}&accountName=${encodeURIComponent(row.ten)}`;
+if(!account) return;
 
-let div=document.createElement("div");
+let qrURL =
+`https://img.vietqr.io/image/BIDV-${account}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(remark)}&accountName=${encodeURIComponent(name)}`;
+
+let fileName = `${className}_${studentID}.png`;
+
+let div = document.createElement("div");
 
 div.className="qr";
 
-div.innerHTML=`
+div.innerHTML = `
 
-<p><b>${row.ten}</b></p>
+<p><b>${name}</b></p>
+<p>${className} - ${studentID}</p>
 
-<img src="${url}">
+<img src="${qrURL}">
 
 <br><br>
 
-<a href="${url}" download>Tải QR</a>
+<a href="${qrURL}" download="${fileName}">Tải QR</a>
 
 `;
 
@@ -85,9 +105,9 @@ container.appendChild(div);
 
 });
 
-}
+};
 
-});
+reader.readAsArrayBuffer(file);
 
 });
 
