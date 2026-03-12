@@ -1,37 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
+
 <head>
 
 <meta charset="UTF-8">
-
-<title>Tạo QR BIDV theo lô</title>
+<title>QR thu hộ Trường học</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
 <style>
 
 body{
-font-family:Arial;
-padding:30px;
-background:#f4f6f8;
+font-family: Arial;
+margin:0;
+background:#f2f2f2;
 }
 
-h1{
-color:#0a5aa1;
+.header{
+
+background: linear-gradient(90deg,#0c7c6a,#0f9a8a);
+color:white;
+padding:40px;
+text-align:center;
+
+}
+
+.header h1{
+margin:0;
+font-size:32px;
+}
+
+.header p{
+font-size:18px;
+margin-top:10px;
+}
+
+.contact{
+margin-top:10px;
+font-size:16px;
+opacity:0.9;
+}
+
+.container{
+
+padding:40px;
+text-align:center;
+
+}
+
+input[type=file]{
+
+padding:10px;
+font-size:16px;
+
+}
+
+.search{
+
+margin-left:20px;
+padding:10px;
+font-size:16px;
+width:350px;
+border-radius:8px;
+border:1px solid #ccc;
+
 }
 
 .qr{
+
+display:inline-block;
 background:white;
 padding:15px;
 margin:10px;
-display:inline-block;
 border-radius:10px;
-box-shadow:0 2px 5px rgba(0,0,0,0.2);
-text-align:center;
+box-shadow:0 3px 10px rgba(0,0,0,0.2);
+
 }
 
-img{
+.qr img{
+
 width:200px;
+
 }
 
 </style>
@@ -40,48 +89,59 @@ width:200px;
 
 <body>
 
-<h1>Tạo QR BIDV theo lô</h1>
+<div class="header">
+
+<h1>PGD ĐÔNG HÀ - BIDV QUẢNG TRỊ - QR thu hộ Trường học</h1>
+
+<p>Tải file Excel để tạo QR thanh toán, tìm kiếm thông tin học sinh để thanh toán các khoản phí</p>
+
+<div class="contact">
+Liên hệ: Lê Mạnh Hùng - PGD Đông Hà - ĐT: 0914.179.989
+</div>
+
+</div>
+
+<div class="container">
 
 <input type="file" id="fileInput">
 
+<input class="search" type="text" id="search" placeholder="🔍 Tìm theo AccountName / AccountNumber / StudentID">
+
 <div id="qrContainer"></div>
+
+</div>
 
 <script>
 
+let data=[];
+
 document.getElementById("fileInput").addEventListener("change",function(e){
 
-const file = e.target.files[0];
+const file=e.target.files[0];
+const reader=new FileReader();
 
-const reader = new FileReader();
+reader.onload=function(e){
 
-reader.onload = function(e){
+const workbook=XLSX.read(e.target.result,{type:'binary'});
+const sheet=workbook.Sheets[workbook.SheetNames[0]];
+data=XLSX.utils.sheet_to_json(sheet);
 
-const data = new Uint8Array(e.target.result);
+render(data);
 
-const workbook = XLSX.read(data,{type:'array'});
+};
 
-const sheet = workbook.Sheets[workbook.SheetNames[0]];
+reader.readAsBinaryString(file);
 
-const rows = XLSX.utils.sheet_to_json(sheet,{defval:""});
+});
+
+function render(rows){
 
 let container=document.getElementById("qrContainer");
-
 container.innerHTML="";
 
 rows.forEach(row=>{
 
-let account=row["AccountNumber"];
-let amount=row["Amount"];
-let name=row["AccountName"];
-let remark=row["Remark"];
-let className=row["Class"];
-let studentID=row["StudentID"];
-
-if(account=="") return;
-
-let qr=`https://img.vietqr.io/image/BIDV-${account}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(remark)}&accountName=${encodeURIComponent(name)}`;
-
-let fileName=`${className}_${studentID}.png`;
+let qr=`https://img.vietqr.io/image/BIDV-${row.AccountNumber}-compact2.png?amount=${row.Amount}&addInfo=${encodeURIComponent(row.Remark)}&accountName=${encodeURIComponent(row.AccountName)}`;
 
 let div=document.createElement("div");
 
@@ -89,14 +149,14 @@ div.className="qr";
 
 div.innerHTML=`
 
-<p><b>${name}</b></p>
-<p>${className} - ${studentID}</p>
+<b>${row.AccountName}</b><br>
+${row.Class} - ${row.StudentID}<br><br>
 
-<img src="${qr}">
+<img src="${qr}"><br><br>
 
-<br><br>
-
-<a href="${qr}" download="${fileName}">Tải QR</a>
+<a href="${qr}" download="${row.Class}_${row.StudentID}.png">
+Tải QR
+</a>
 
 `;
 
@@ -104,13 +164,32 @@ container.appendChild(div);
 
 });
 
-};
+}
 
-reader.readAsArrayBuffer(file);
+document.getElementById("search").addEventListener("keyup",function(){
+
+let keyword=this.value.toLowerCase();
+
+let filtered=data.filter(r=>{
+
+return(
+
+String(r.AccountName).toLowerCase().includes(keyword) ||
+
+String(r.AccountNumber).toLowerCase().includes(keyword) ||
+
+String(r.StudentID).toLowerCase().includes(keyword)
+
+);
+
+});
+
+render(filtered);
 
 });
 
 </script>
 
 </body>
+
 </html>
