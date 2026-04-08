@@ -9,48 +9,40 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <style>
-
 body{
 font-family:Arial;
 margin:0;
 background:#f3f3f3;
 }
-
 .header{
 background:#0b6b5c;
 color:white;
 text-align:center;
 padding:25px;
 }
-
 .contact{
 color:yellow;
 font-weight:bold;
 }
-
 .container{
 padding:20px;
 text-align:center;
 }
-
 .qr-grid{
 display:grid;
 grid-template-columns:repeat(auto-fill,220px);
 gap:20px;
 justify-content:center;
 }
-
 .card{
 background:white;
 padding:15px;
 border-radius:10px;
 box-shadow:0 2px 5px rgba(0,0,0,0.2);
 }
-
 .qr{
 width:180px;
 }
-
 .bigButton{
 font-size:22px;
 padding:15px 35px;
@@ -60,11 +52,9 @@ border:none;
 border-radius:6px;
 cursor:pointer;
 }
-
 </style>
 
 </head>
-
 <body>
 
 <div class="header">
@@ -230,113 +220,65 @@ card.style.display="none"
 /* ===== VẼ QR + TEXT ===== */
 
 async function createStyledQR(url, name, className){
-
-const res = await fetch(url)
+const res = await fetch(url.replace('-compact2.png','-compact.png'))
 const blob = await res.blob()
 const img = await createImageBitmap(blob)
-
 const canvas = document.createElement("canvas")
 const ctx = canvas.getContext("2d")
-
 canvas.width = img.width
 canvas.height = img.height + 70
-
-// nền xám giống VietQR
 ctx.fillStyle = "#f1f1f1"
 ctx.fillRect(0,0,canvas.width,canvas.height)
-
-// vẽ QR gốc
 ctx.drawImage(img,0,0)
-
-// text
 ctx.fillStyle = "#333"
 ctx.textAlign = "center"
-
-// tên
 ctx.font = "bold 20px Arial"
 ctx.fillText(name.toUpperCase(), canvas.width/2, img.height + 25)
-
-// lớp
 ctx.font = "18px Arial"
-ctx.fillText("Lớp: " + className, canvas.width/2, img.height + 55)
-
-return new Promise(resolve=>{
-canvas.toBlob(resolve,"image/png")
-})
-
+ctx.fillText("Lớp: "+className, canvas.width/2, img.height + 55)
+return new Promise(resolve=>canvas.toBlob(resolve,"image/png"))
 }
 
 /* ===== TẢI 1 QR ===== */
 
 async function downloadSingle(index){
-
 const item = qrImages[index]
-
-const blob = await createStyledQR(
-item.url,
-item.name,
-item.class
-)
-
+const blob = await createStyledQR(item.url,item.name,item.class)
 saveAs(blob, item.name + ".png")
-
 }
 
 /* ===== TẢI THEO LỚP ===== */
 
 async function downloadClassQR(){
-
 const selected=document.getElementById("classFilter").value
-
 if(selected==""){
 alert("Vui lòng chọn lớp")
 return
 }
-
 const zip=new JSZip()
-
-for(let i=0;i<qrImages.length;i++){
-
-if(qrImages[i].class==selected){
-
-const blob=await createStyledQR(
-qrImages[i].url,
-qrImages[i].name,
-qrImages[i].class
-)
-
+const concurrency=5
+let index=0
+async function worker(){
+while(index<qrImages.length){
+const i=index++
+if(qrImages[i].class!=selected) continue
+const blob = await createStyledQR(qrImages[i].url, qrImages[i].name, qrImages[i].class)
 zip.file(qrImages[i].name+".png",blob)
-
 }
-
 }
-
+await Promise.all(Array(concurrency).fill().map(worker))
 const content=await zip.generateAsync({type:"blob"})
 saveAs(content,"QR_LOP_"+selected+".zip")
-
 }
 
-/* ===== TẢI TẤT CẢ ===== */
+/* ===== TẢI TẤT CẢ ===== MAX TỐC ĐỘ ===== */
 
 async function downloadAll(){
-
-const zip=new JSZip()
-
-for(let i=0;i<qrImages.length;i++){
-
-const blob=await createStyledQR(
-qrImages[i].url,
-qrImages[i].name,
-qrImages[i].class
-)
-
-zip.file(qrImages[i].name+".png",blob)
-
-}
-
+const zip=new JSZip(),concurrency=5;let index=0
+async function worker(){while(index<qrImages.length){const i=index++;const item=qrImages[i];const blob=await createStyledQR(item.url,item.name,item.class);zip.file(item.name+".png",blob)}}
+await Promise.all(Array(concurrency).fill().map(worker))
 const content=await zip.generateAsync({type:"blob"})
 saveAs(content,"QR_HOCSINH.zip")
-
 }
 
 </script>
