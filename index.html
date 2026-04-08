@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Thu hộ tiền ăn tiền SHP</title>
+<title>Thu hộ tiền ăn Tiền SHP</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -53,33 +53,42 @@ border-radius:6px;
 cursor:pointer;
 }
 </style>
+
 </head>
+
 <body>
 
 <div class="header">
-<h2>Thu hộ tiền ăn và SHP Trường TH và THCS Chu Văn An</h2>
+<h2>Thu hộ tiền ăn, Tiền SHP Trường TH và THCS Chu Văn An</h2>
 <div class="contact">
 Lê Mạnh Hùng - PGD Đông Hà - ĐT: 0914.179.989
 </div>
 </div>
 
 <div class="container">
+
 <input type="file" id="upload" accept=".xlsx">
 <br><br>
+
 <h3>Lọc theo lớp</h3>
 <select id="classFilter">
 <option value="">Tất cả lớp</option>
 </select>
+
 <button onclick="applyFilter()">Lọc</button>
 <button onclick="downloadClassQR()">Tải QR lớp đã chọn</button>
+
 <br><br>
 <input type="text" id="search" placeholder="Tìm tên / mã học sinh" onkeyup="applyFilter()">
+
 <br><br>
 <div id="qrContainer" class="qr-grid"></div>
+
 <br><br>
 <button onclick="downloadAll()" class="bigButton">
 Tải toàn bộ QR
 </button>
+
 </div>
 
 <script>
@@ -130,6 +139,7 @@ const card=document.createElement("div")
 card.className="card"
 card.dataset.class=s.Class
 card.dataset.name=(s.AccountName+" "+s.StudentID).toLowerCase()
+
 card.innerHTML=`
 <b>${s.AccountName}</b><br>
 Lớp: ${s.Class}<br>
@@ -141,7 +151,17 @@ Số tiền: ${Number(amount).toLocaleString()} VND
 <button onclick="downloadSingle(${index})">Tải QR</button>
 `
 container.appendChild(card)
-qrImages.push({url:qr,name:s.AccountName,class:s.Class})
+
+// Lưu object với đầy đủ thông tin để vẽ lên QR
+qrImages.push({
+url: qr,
+name: s.AccountName,
+class: s.Class,
+StudentID: s.StudentID,
+AccountNumber: account,
+Amount: amount
+})
+
 })
 buildClassFilter()
 }
@@ -169,53 +189,70 @@ card.style.display=(matchClass && matchText)?"block":"none"
 })
 }
 
-/* ===== VẼ QR + TÊN + LỚP ===== */
-async function createStyledQR(url, name, className){
-const res=await fetch(url)
+// Vẽ QR + thông tin Họ Tên, Lớp, Số tài khoản, Số tiền
+async function createStyledQR(item){
+const res=await fetch(item.url)
 const blob=await res.blob()
 const img=await createImageBitmap(blob)
 const canvas=document.createElement("canvas")
 const ctx=canvas.getContext("2d")
 canvas.width=img.width
-canvas.height=img.height+60
+canvas.height=img.height+80
 ctx.fillStyle="#f1f1f1"
 ctx.fillRect(0,0,canvas.width,canvas.height)
 ctx.drawImage(img,0,0)
 ctx.fillStyle="#000"
 ctx.textAlign="center"
 ctx.font="bold 16px Arial"
-ctx.fillText(name,canvas.width/2,img.height+20)
+ctx.fillText(item.name, canvas.width/2, img.height+20)
 ctx.font="14px Arial"
-ctx.fillText("Lớp: "+className,canvas.width/2,img.height+45)
+ctx.fillText("Lớp: "+item.class, canvas.width/2, img.height+40)
+ctx.fillText("Số TK: "+item.AccountNumber, canvas.width/2, img.height+60)
+ctx.fillText("Số tiền: "+Number(item.Amount).toLocaleString()+" VND", canvas.width/2, img.height+80)
 return new Promise(resolve=>canvas.toBlob(resolve,"image/png"))
 }
 
-/* ===== TẢI 1 QR ===== */
+// Tải 1 QR
 async function downloadSingle(index){
 const item=qrImages[index]
-const blob=await createStyledQR(item.url,item.name,item.class)
-saveAs(blob,item.name+".png")
+const blob=await createStyledQR(item)
+saveAs(blob, item.class+"_"+item.StudentID+"_"+item.name+".png")
 }
 
-/* ===== TẢI THEO LỚP ===== */
+// Tải theo lớp
 async function downloadClassQR(){
 const selected=document.getElementById("classFilter").value
 if(selected==""){alert("Vui lòng chọn lớp"); return}
 const zip=new JSZip()
 const concurrency=5
 let index=0
-async function worker(){while(index<qrImages.length){const i=index++;if(qrImages[i].class!=selected) continue
-const blob=await createStyledQR(qrImages[i].url,qrImages[i].name,qrImages[i].class)
-zip.file(qrImages[i].name+".png",blob)}}
+async function worker(){
+while(index<qrImages.length){
+const i=index++
+const item=qrImages[i]
+if(item.class!=selected) continue
+const blob=await createStyledQR(item)
+zip.file(item.class+"_"+item.StudentID+"_"+item.name+".png",blob)
+}
+}
 await Promise.all(Array(concurrency).fill().map(worker))
 const content=await zip.generateAsync({type:"blob"})
 saveAs(content,"QR_LOP_"+selected+".zip")
 }
 
-/* ===== TẢI TẤT CẢ ===== */
+// Tải tất cả QR
 async function downloadAll(){
-const zip=new JSZip(),concurrency=5;let index=0
-async function worker(){while(index<qrImages.length){const i=index++;const item=qrImages[i];const blob=await createStyledQR(item.url,item.name,item.class);zip.file(item.name+".png",blob)}}
+const zip=new JSZip()
+const concurrency=5
+let index=0
+async function worker(){
+while(index<qrImages.length){
+const i=index++
+const item=qrImages[i]
+const blob=await createStyledQR(item)
+zip.file(item.class+"_"+item.StudentID+"_"+item.name+".png",blob)
+}
+}
 await Promise.all(Array(concurrency).fill().map(worker))
 const content=await zip.generateAsync({type:"blob"})
 saveAs(content,"QR_HOCSINH.zip")
