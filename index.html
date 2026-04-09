@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Thu hộ tiền ăn Tiền SHP</title>
+<title>Thu hộ tiền ăn</title>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -18,11 +18,7 @@ background:#f3f3f3;
 background:#0b6b5c;
 color:white;
 text-align:center;
-padding:25px;
-}
-.contact{
-color:yellow;
-font-weight:bold;
+padding:20px;
 }
 .container{
 padding:20px;
@@ -36,21 +32,24 @@ justify-content:center;
 }
 .card{
 background:white;
-padding:15px;
+padding:10px;
 border-radius:10px;
 box-shadow:0 2px 5px rgba(0,0,0,0.2);
 }
 .qr{
 width:180px;
 }
+button{
+padding:8px 12px;
+cursor:pointer;
+}
 .bigButton{
-font-size:22px;
-padding:15px 35px;
+font-size:20px;
+padding:15px 30px;
 background:#0b6b5c;
 color:white;
 border:none;
 border-radius:6px;
-cursor:pointer;
 }
 </style>
 
@@ -59,10 +58,7 @@ cursor:pointer;
 <body>
 
 <div class="header">
-<h2>Thu hộ tiền ăn, Tiền SHP</h2>
-<div class="contact">
-Lê Mạnh Hùng - ĐT: 0914.179.989
-</div>
+<h2>Thu hộ tiền ăn</h2>
 </div>
 
 <div class="container">
@@ -70,24 +66,18 @@ Lê Mạnh Hùng - ĐT: 0914.179.989
 <input type="file" id="upload" accept=".xlsx">
 <br><br>
 
-<h3>Lọc theo lớp</h3>
-<select id="classFilter">
-<option value="">Tất cả lớp</option>
-</select>
-
+<select id="classFilter"></select>
 <button onclick="applyFilter()">Lọc</button>
 <button onclick="downloadClassQR()">Tải QR lớp</button>
 
 <br><br>
-<input type="text" id="search" placeholder="Tìm tên / mã HS" onkeyup="applyFilter()">
+<input type="text" id="search" placeholder="Tìm kiếm..." onkeyup="applyFilter()">
 
 <br><br>
 <div id="qrContainer" class="qr-grid"></div>
 
 <br><br>
-<button onclick="downloadAll()" class="bigButton">
-Tải toàn bộ QR
-</button>
+<button onclick="downloadAll()" class="bigButton">Tải toàn bộ QR</button>
 
 </div>
 
@@ -95,9 +85,9 @@ Tải toàn bộ QR
 
 let students=[]
 let qrImages=[]
-const qrCache = new Map()
+const qrCache=new Map()
 
-// ===== LOAD FILE =====
+// LOAD FILE
 document.getElementById("upload").addEventListener("change",function(e){
 const reader=new FileReader()
 reader.onload=function(evt){
@@ -110,7 +100,7 @@ render()
 reader.readAsArrayBuffer(e.target.files[0])
 })
 
-// ===== RENDER =====
+// RENDER
 function render(){
 const container=document.getElementById("qrContainer")
 container.innerHTML=""
@@ -133,7 +123,6 @@ card.dataset.name=(s.AccountName+" "+s.StudentID).toLowerCase()
 card.innerHTML=`
 <b>${s.AccountName}</b><br>
 Lớp: ${s.Class}<br>
-Mã HS: ${s.StudentID}<br>
 ${Number(amount).toLocaleString()} VND
 <br><br>
 <img src="${qr}" class="qr">
@@ -157,7 +146,7 @@ Amount: amount
 buildClassFilter()
 }
 
-// ===== FILTER =====
+// FILTER
 function buildClassFilter(){
 const classes=[...new Set(students.map(s=>s.Class))]
 const select=document.getElementById("classFilter")
@@ -173,16 +162,15 @@ select.appendChild(op)
 function applyFilter(){
 const selected=document.getElementById("classFilter").value
 const text=document.getElementById("search").value.toLowerCase()
-const cards=document.querySelectorAll(".card")
 
-cards.forEach(card=>{
-const matchClass = selected=="" || card.dataset.class==selected
-const matchText = card.dataset.name.includes(text)
-card.style.display=(matchClass && matchText)?"block":"none"
+document.querySelectorAll(".card").forEach(card=>{
+const ok1 = selected=="" || card.dataset.class==selected
+const ok2 = card.dataset.name.includes(text)
+card.style.display=(ok1&&ok2)?"block":"none"
 })
 }
 
-// ===== CACHE QR =====
+// CACHE QR
 async function fetchQR(url){
 if(qrCache.has(url)) return qrCache.get(url)
 const res=await fetch(url)
@@ -191,86 +179,112 @@ qrCache.set(url,blob)
 return blob
 }
 
-// ===== CREATE QR CHUẨN VIETQR =====
+// ===== QR CHUẨN GIỐNG ẢNH =====
 async function createStyledQR(item){
 
 const blob = await fetchQR(item.url)
 const qrImg = await createImageBitmap(blob)
 
 const width = 600
-const qrSize = 500
+const qrSize = 420
 
-const canvas = document.createElement("canvas")
-const ctx = canvas.getContext("2d")
+const canvas=document.createElement("canvas")
+const ctx=canvas.getContext("2d")
 
-canvas.width = width
-canvas.height = qrSize + 260
+canvas.width=width
+canvas.height=qrSize+330
 
 // nền
-ctx.fillStyle = "#ffffff"
-ctx.fillRect(0,0,canvas.width,canvas.height)
+ctx.fillStyle="#f3f3f3"
+ctx.fillRect(0,0,width,canvas.height)
 
-// header
-ctx.fillStyle = "#e53935"
-ctx.font = "bold 48px Arial"
-ctx.textAlign = "center"
-ctx.fillText("VIETQR", width/2, 60)
+// BIDV
+ctx.fillStyle="#0b6b5c"
+ctx.font="bold 48px Arial"
+ctx.textAlign="center"
+ctx.fillText("BIDV",width/2,60)
+
+// VIETQR
+ctx.fillStyle="#e53935"
+ctx.font="bold 42px Arial"
+ctx.fillText("VIETQR",width/2,110)
+
+// QR border
+const x=(width-qrSize)/2
+const y=130
+
+ctx.fillStyle="#fff"
+ctx.fillRect(x-10,y-10,qrSize+20,qrSize+20)
+
+ctx.strokeStyle="#2b4c7e"
+ctx.lineWidth=4
+ctx.strokeRect(x-10,y-10,qrSize+20,qrSize+20)
 
 // QR
-ctx.drawImage(qrImg, (width-qrSize)/2, 80, qrSize, qrSize)
+ctx.drawImage(qrImg,x,y,qrSize,qrSize)
 
-// text
-let y = qrSize + 120
+// napas + BIDV
+let ty=y+qrSize+50
 
-ctx.fillStyle = "#000"
-ctx.font = "bold 26px Arial"
-ctx.fillText(item.name.toUpperCase(), width/2, y)
+ctx.fillStyle="#2b4c7e"
+ctx.font="bold 22px Arial"
+ctx.fillText("napas 247",width/2-80,ty)
 
-ctx.font = "22px Arial"
-y += 35
-ctx.fillText("Lớp: " + item.class, width/2, y)
+ctx.fillStyle="#999"
+ctx.fillText("|",width/2,ty)
 
-y += 35
-ctx.fillText("Số TK: " + item.AccountNumber, width/2, y)
+ctx.fillStyle="#0b6b5c"
+ctx.fillText("BIDV",width/2+80,ty)
 
-y += 35
-ctx.font = "bold 24px Arial"
+// NAME
+ty+=50
+ctx.fillStyle="#000"
+ctx.font="bold 28px Arial"
+ctx.fillText(item.name.toUpperCase(),width/2,ty)
+
+// CLASS
+ty+=35
+ctx.font="22px Arial"
+ctx.fillText("Lớp: "+item.class,width/2,ty)
+
+// ACCOUNT
+ty+=35
+ctx.fillText("Số TK: "+item.AccountNumber,width/2,ty)
+
+// AMOUNT
+ty+=40
+ctx.font="bold 26px Arial"
 ctx.fillText(
-"Số tiền: " + Number(item.Amount).toLocaleString() + " VND",
+"Số tiền: "+Number(item.Amount).toLocaleString()+" VND",
 width/2,
-y
+ty
 )
 
-return new Promise(resolve=>canvas.toBlob(resolve,"image/png"))
+return new Promise(res=>canvas.toBlob(res,"image/png"))
 }
 
-// ===== DOWNLOAD 1 =====
-async function downloadSingle(index){
-const item=qrImages[index]
-const blob=await createStyledQR(item)
-saveAs(blob, item.class+"_"+item.StudentID+"_"+item.name+".png")
+// DOWNLOAD 1
+async function downloadSingle(i){
+const blob=await createStyledQR(qrImages[i])
+saveAs(blob,qrImages[i].name+".png")
 }
 
-// ===== DOWNLOAD THEO LỚP =====
+// DOWNLOAD CLASS
 async function downloadClassQR(){
 const selected=document.getElementById("classFilter").value
-if(selected==""){alert("Chọn lớp"); return}
+if(!selected){alert("Chọn lớp");return}
 
 const zip=new JSZip()
-const concurrency=20
 let index=0
+const concurrency=20
 
 async function worker(){
-while(true){
-if(index>=qrImages.length) break
+while(index<qrImages.length){
 const i=index++
-
 const item=qrImages[i]
 if(item.class!==selected) continue
-
 const blob=await createStyledQR(item)
-
-zip.file(item.class+"_"+item.StudentID+"_"+item.name+".png",blob)
+zip.file(item.name+".png",blob)
 }
 }
 
@@ -279,27 +293,24 @@ const content=await zip.generateAsync({type:"blob"})
 saveAs(content,"QR_LOP_"+selected+".zip")
 }
 
-// ===== DOWNLOAD ALL =====
+// DOWNLOAD ALL
 async function downloadAll(){
 const zip=new JSZip()
-const concurrency=20
 let index=0
+const concurrency=20
 
 async function worker(){
-while(true){
-if(index>=qrImages.length) break
+while(index<qrImages.length){
 const i=index++
-
 const item=qrImages[i]
 const blob=await createStyledQR(item)
-
-zip.file(item.class+"_"+item.StudentID+"_"+item.name+".png",blob)
+zip.file(item.name+".png",blob)
 }
 }
 
 await Promise.all(Array(concurrency).fill().map(worker))
 const content=await zip.generateAsync({type:"blob"})
-saveAs(content,"QR_HOCSINH.zip")
+saveAs(content,"QR_ALL.zip")
 }
 
 </script>
